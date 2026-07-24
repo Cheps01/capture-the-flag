@@ -6,20 +6,21 @@ This is a desktop capture-the-flag online game. The system has capabitlities to 
 ```
 ctf-game/
 ├── src/
-│   ├── network/               # Network logic
-│   │   ├── udp.ts             # Socket UDP (dgram)
-│   │   └── tcp.ts             # Socket TCP (net)
-│   ├── renderer/              # Renderer process
-│   │   ├── index.html         # Renderer entry point
-│   │   ├── renderer.ts        # Phaser entry point
-│   │   └── scenes/            # Phaser scenes
+│   ├── main/                  # Main Process (Node.js)
+│   │   ├── main.ts            # Electron entry point
+│   │   ├── window.ts          # Window management
+│   │   └── network/           # Network sockets
+│   │       ├── udp.ts
+│   │       └── tcp.ts
+│   ├── renderer/              # Renderer Process (Chromium)
+│   │   ├── index.html
+│   │   ├── renderer.ts
+│   │   └── scenes/
 │   │       ├── MenuScene.ts
 │   │       ├── LobbyScene.ts
 │   │       └── GameScene.ts
-│   ├── shared/                # Shared code from processes
-│   │   └── protocol.ts        # Protocol messages defitinition
-│   ├── main.ts                # Electron entry point
-│   └── window.ts              # Window managment  
+│   └── shared/                # Shared code for both processes
+│       └── protocol.ts
 ├── package.json
 └── tsconfig.json
 ```
