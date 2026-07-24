@@ -1,0 +1,33 @@
+{
+  "name": "capture-the-flag",
+  "version": "1.0.0",
+  "description": "This is a desktop capture-the-flag online game.",
+  "main": "dist/main/main.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "npm run build && electron .",
+    "dev": "tsc --watch & electron ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Cheps01/capture-the-flag.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Cheps01/capture-the-flag/issues"
+  },
+  "homepage": "https://github.com/Cheps01/capture-the-flag#readme",
+  "dependencies": {
+    "electron": "^43.2.0",
+    "phaser": "^4.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "electron-builder": "^26.15.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^7.0.2"
+  }
+}
