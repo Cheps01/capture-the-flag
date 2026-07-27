@@ -4,9 +4,8 @@
   "description": "This is a desktop capture-the-flag online game.",
   "main": "dist/main/main.js",
   "scripts": {
-    "build": "tsc",
-    "start": "npm run build && electron .",
-    "dev": "tsc --watch & electron ."
+    "dev": "vite",
+    "build": "vite build"
   },
   "repository": {
     "type": "git",
@@ -28,6 +27,8 @@
     "@types/node": "^26.1.1",
     "electron-builder": "^26.15.3",
     "ts-node": "^10.9.2",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vite": "^8.1.5",
+    "vite-plugin-electron": "^1.1.0"
   }
 }
