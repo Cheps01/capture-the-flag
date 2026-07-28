@@ -1,21 +1,43 @@
 import dgram from 'dgram';
 
-export function createUdpBroadcaster(): dgram.Socket {
-    const socket = dgram.createSocket('udp4');
+let socket: dgram.Socket | null = null;
+let responseCallback: ((msg: unknown, rinfo: dgram.RemoteInfo) => void) | null = null;
+
+export function init(callback: (msg: unknown, rinfo: dgram.RemoteInfo) => void): void {
+    if (socket) {
+        responseCallback = callback;
+        return;
+    }
+    responseCallback = callback;
+    socket = dgram.createSocket('udp4');
     socket.bind(() => {
-        socket.setBroadcast(true);
+        socket!.setBroadcast(true);
     });
-    return socket;
+    socket.on('message', (msg, rinfo) => {
+        try {
+            responseCallback?.(JSON.parse(msg.toString()), rinfo);
+        } catch {
+            // Discard invalid JSON
+        }
+    });
 }
 
-export function sendUdpMessage(socket: dgram.Socket, message: Buffer, port: number, address: string): void {
-    socket.send(message, port, address, (err) => {
-        if (err) console.error('Error enviando UDP:', err);
-    });
+export function sendBroadcast(port: number, msg: unknown): void {
+    if (!socket) return;
+    const data = Buffer.from(JSON.stringify(msg));
+    socket.send(data, port, '255.255.255.255');
 }
 
-export function broadcastDiscovery(socket: dgram.Socket, message: Buffer, discoveryPort: number): void {
-    socket.send(message, discoveryPort, '255.255.255.255', (err) => {
-        if (err) console.error('Error en broadcast:', err);
-    });
+export function sendUnicast(address: string, port: number, msg: unknown): void {
+    if (!socket) return;
+    const data = Buffer.from(JSON.stringify(msg));
+    socket.send(data, port, address);
+}
+
+export function close(): void {
+    if (socket) {
+        socket.close();
+        socket = null;
+    }
+    responseCallback = null;
 }

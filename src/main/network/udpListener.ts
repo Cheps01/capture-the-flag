@@ -1,21 +1,35 @@
 import dgram from 'dgram';
+import { UDP_DISCOVERY_PORT } from '../../shared/types';
 
-export function createUdpListener(port: number): dgram.Socket {
+let socket: dgram.Socket | null = null;
 
-    const socket = dgram.createSocket('udp4');
-
-    socket.on('message', (msg: Buffer, rinfo: dgram.RemoteInfo) => {
-        console.log(`Mensaje de ${rinfo.address}:${rinfo.port} ->`, msg);
+export function start(onDiscover: (msg: unknown, address: string, port: number) => void): void {
+    stop();
+    socket = dgram.createSocket('udp4');
+    socket.on('message', (msg, rinfo) => {
+        try {
+            onDiscover(JSON.parse(msg.toString()), rinfo.address, rinfo.port);
+        } catch {
+            // Discard invalid JSON per protocol
+        }
     });
-
     socket.on('error', (err) => {
-        console.error('Error UDP:', err);
+        console.error('UDP listener error:', err);
+    });
+    socket.bind(UDP_DISCOVERY_PORT, () => {
+        console.log(`UDP discovery listening on port ${UDP_DISCOVERY_PORT}`);
+    });
+}
+
+export function respond(address: string, port: number, msg: unknown): void {
+    if (!socket) return;
+    const data = Buffer.from(JSON.stringify(msg));
+    socket.send(data, port, address);
+}
+
+export function stop(): void {
+    if (socket) {
         socket.close();
-    });
-
-    socket.bind(port, () => {
-        console.log(`Socket UDP escuchando en puerto ${port}`);
-    });
-
-    return socket;
+        socket = null;
+    }
 }
