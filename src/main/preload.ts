@@ -1,4 +1,21 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import type {
+    DiscoverMessage,
+    ServerInfoMessage,
+    JoinMessage,
+    InputMessage,
+    WelcomeMessage,
+    LobbyMessage,
+    CountdownMessage,
+    StateMessage,
+    GameOverMessage,
+    ErrorMessage,
+    PlayerInfo,
+    FlagState,
+    PlayerState,
+    ErrorReason,
+    DirectionValue,
+} from '../shared/types';
 
 // ═══════════════════════════════════════════════════════════════════
 // Client API — used when this app connects to a remote server
@@ -18,13 +35,13 @@ contextBridge.exposeInMainWorld('client', {
     // ── Send Protocol Messages (C → S) ────────────────────────
     join: (name: string) =>
         ipcRenderer.invoke('client:join', name),
-    input: (dir: { x: number; y: number }) =>
+    input: (dir: { x: DirectionValue; y: DirectionValue }) =>
         ipcRenderer.invoke('client:input', dir),
     interact: () =>
         ipcRenderer.invoke('client:interact'),
 
     // ── Receive Events from Server (S → C) ─────────────────────
-    onServerInfo: (cb: (data: unknown) => void) => {
+    onServerInfo: (cb: (data: ServerInfoMessage) => void) => {
         ipcRenderer.on('client:server_info', (_e, data) => cb(data));
     },
     onConnected: (cb: () => void) => {
@@ -33,25 +50,25 @@ contextBridge.exposeInMainWorld('client', {
     onDisconnected: (cb: () => void) => {
         ipcRenderer.on('client:disconnected', () => cb());
     },
-    onWelcome: (cb: (data: unknown) => void) => {
+    onWelcome: (cb: (data: WelcomeMessage) => void) => {
         ipcRenderer.on('client:welcome', (_e, data) => cb(data));
     },
-    onLobby: (cb: (data: unknown) => void) => {
+    onLobby: (cb: (data: LobbyMessage) => void) => {
         ipcRenderer.on('client:lobby', (_e, data) => cb(data));
     },
-    onCountdown: (cb: (data: unknown) => void) => {
+    onCountdown: (cb: (data: CountdownMessage) => void) => {
         ipcRenderer.on('client:countdown', (_e, data) => cb(data));
     },
     onStart: (cb: () => void) => {
         ipcRenderer.on('client:start', (_e) => cb());
     },
-    onState: (cb: (data: unknown) => void) => {
+    onState: (cb: (data: StateMessage) => void) => {
         ipcRenderer.on('client:state', (_e, data) => cb(data));
     },
-    onGameOver: (cb: (data: unknown) => void) => {
+    onGameOver: (cb: (data: GameOverMessage) => void) => {
         ipcRenderer.on('client:game_over', (_e, data) => cb(data));
     },
-    onError: (cb: (data: unknown) => void) => {
+    onError: (cb: (data: ErrorMessage) => void) => {
         ipcRenderer.on('client:error', (_e, data) => cb(data));
     },
 });
@@ -70,33 +87,33 @@ contextBridge.exposeInMainWorld('server', {
         ipcRenderer.invoke('server:kick', clientId),
 
     // ── Send UDP Response ──────────────────────────────────────
-    serverInfo: (address: string, port: number, data: Record<string, unknown>) =>
+    serverInfo: (address: string, port: number, data: ServerInfoMessage) =>
         ipcRenderer.invoke('server:server_info', address, port, data),
 
     // ── Send Protocol Messages (S → C) ────────────────────────
     welcome: (clientId: string, playerId: string) =>
         ipcRenderer.invoke('server:welcome', clientId, playerId),
-    lobby: (players: Array<{ id: string; name: string }>) =>
+    lobby: (players: PlayerInfo[]) =>
         ipcRenderer.invoke('server:lobby', players),
     countdown: (seconds: number) =>
         ipcRenderer.invoke('server:countdown', seconds),
     start: () =>
         ipcRenderer.invoke('server:start'),
-    state: (flag: Record<string, unknown>, players: Array<Record<string, unknown>>) =>
+    state: (flag: FlagState, players: PlayerState[]) =>
         ipcRenderer.invoke('server:state', flag, players),
     gameOver: (winner: string) =>
         ipcRenderer.invoke('server:game_over', winner),
-    error: (clientId: string, reason: string) =>
+    error: (clientId: string, reason: ErrorReason) =>
         ipcRenderer.invoke('server:error', clientId, reason),
 
     // ── Receive Events from Clients (C → S) ────────────────────
-    onDiscover: (cb: (data: unknown, address: string) => void) => {
+    onDiscover: (cb: (data: DiscoverMessage, address: string) => void) => {
         ipcRenderer.on('server:discover', (_e, data, address) => cb(data, address));
     },
-    onJoin: (cb: (clientId: string, data: unknown) => void) => {
+    onJoin: (cb: (clientId: string, data: JoinMessage) => void) => {
         ipcRenderer.on('server:join', (_e, clientId, data) => cb(clientId, data));
     },
-    onInput: (cb: (clientId: string, data: unknown) => void) => {
+    onInput: (cb: (clientId: string, data: InputMessage) => void) => {
         ipcRenderer.on('server:input', (_e, clientId, data) => cb(clientId, data));
     },
     onInteract: (cb: (clientId: string) => void) => {

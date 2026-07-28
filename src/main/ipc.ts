@@ -4,7 +4,26 @@ import * as tcpServer from './network/tcpServer';
 import * as udpBroadcast from './network/udpBroadcaster';
 import * as udpListen from './network/udpListener';
 import { PROTOCOL_VERSION, GameConfig } from '../shared/types';
-import type { DiscoverMessage } from '../shared/types';
+import type {
+    DiscoverMessage,
+    ServerInfoMessage,
+    JoinMessage,
+    InputMessage,
+    InteractMessage,
+    WelcomeMessage,
+    LobbyMessage,
+    CountdownMessage,
+    StartMessage,
+    StateMessage,
+    GameOverMessage,
+    ErrorMessage,
+    ProtocolMessage,
+    PlayerInfo,
+    FlagState,
+    PlayerState,
+    ErrorReason,
+    DirectionValue,
+} from '../shared/types';
 
 export function registerNetworkHandlers(mainWindow: BrowserWindow): void {
 
@@ -14,8 +33,13 @@ export function registerNetworkHandlers(mainWindow: BrowserWindow): void {
 
     ipcMain.handle('client:discover', (_event, port?: number) => {
         udpBroadcast.init((msg) => {
-            if (msg && typeof msg === 'object' && 'type' in msg && (msg as Record<string, unknown>).type === 'server_info') {
-                mainWindow.webContents.send('client:server_info', msg);
+            try {
+                const typed = msg as ServerInfoMessage;
+                if (typed.type === 'server_info') {
+                    mainWindow.webContents.send('client:server_info', typed);
+                }
+            } catch {
+                // Discard invalid UDP messages silently per protocol
             }
         });
         const discoverMsg: DiscoverMessage = { type: 'discover', v: PROTOCOL_VERSION };
@@ -30,9 +54,11 @@ export function registerNetworkHandlers(mainWindow: BrowserWindow): void {
         return new Promise<void>((resolve) => {
             tcpClient.connect(host, port, {
                 onMessage: (msg) => {
-                    if (msg && typeof msg === 'object' && 'type' in msg) {
-                        const type = (msg as Record<string, unknown>).type;
-                        mainWindow.webContents.send(`client:${type}`, msg);
+                    try {
+                        const typed = msg as ProtocolMessage;
+                        mainWindow.webContents.send(`client:${typed.type}`, typed);
+                    } catch {
+                        // Could notify renderer of parse error here
                     }
                 },
                 onConnect: () => {
@@ -58,15 +84,18 @@ export function registerNetworkHandlers(mainWindow: BrowserWindow): void {
     // ═══════════════════════════════════════════════════════════════
 
     ipcMain.handle('client:join', (_event, name: string) => {
-        tcpClient.send({ type: 'join', v: PROTOCOL_VERSION, name });
+        const msg: JoinMessage = { type: 'join', v: PROTOCOL_VERSION, name };
+        tcpClient.send(msg);
     });
 
-    ipcMain.handle('client:input', (_event, dir: { x: number; y: number }) => {
-        tcpClient.send({ type: 'input', dir });
+    ipcMain.handle('client:input', (_event, dir: { x: DirectionValue; y: DirectionValue }) => {
+        const msg: InputMessage = { type: 'input', dir };
+        tcpClient.send(msg);
     });
 
     ipcMain.handle('client:interact', () => {
-        tcpClient.send({ type: 'interact' });
+        const msg: InteractMessage = { type: 'interact' };
+        tcpClient.send(msg);
     });
 
     // ═══════════════════════════════════════════════════════════════
@@ -76,9 +105,14 @@ export function registerNetworkHandlers(mainWindow: BrowserWindow): void {
     ipcMain.handle('server:listen', (_event, port: number) => {
         tcpServer.start(port, {
             onMessage: (clientId, msg) => {
-                if (msg && typeof msg === 'object' && 'type' in msg) {
-                    const type = (msg as Record<string, unknown>).type;
-                    mainWindow.webContents.send(`server:${type}`, clientId, msg);
+                try {
+                    const typed = msg as ProtocolMessage;
+                    mainWindow.webContents.send(`server:${typed.type}`, clientId, typed);
+                } catch {
+                    tcpServer.sendTo(clientId, {
+                        type: 'error',
+                        reason: 'UNKNOWN_TYPE' as ErrorReason,
+                    } as ErrorMessage);
                 }
             },
             onClientConnect: (clientId) => {
@@ -90,8 +124,13 @@ export function registerNetworkHandlers(mainWindow: BrowserWindow): void {
         });
 
         udpListen.start((msg, address, _remotePort) => {
-            if (msg && typeof msg === 'object' && 'type' in msg && (msg as Record<string, unknown>).type === 'discover') {
-                mainWindow.webContents.send('server:discover', msg, address);
+            try {
+                const typed = msg as DiscoverMessage;
+                if (typed.type === 'discover') {
+                    mainWindow.webContents.send('server:discover', typed, address);
+                }
+            } catch {
+                // Discard invalid UDP messages silently per protocol
             }
         });
     });
@@ -109,39 +148,46 @@ export function registerNetworkHandlers(mainWindow: BrowserWindow): void {
     // SERVER — Send Protocol Messages
     // ═══════════════════════════════════════════════════════════════
 
-    ipcMain.handle('server:server_info', (_event, address: string, port: number, data: Record<string, unknown>) => {
+    ipcMain.handle('server:server_info', (_event, address: string, port: number, data: ServerInfoMessage) => {
         udpListen.respond(address, port, data);
     });
 
     ipcMain.handle('server:welcome', (_event, clientId: string, playerId: string) => {
-        tcpServer.sendTo(clientId, {
+        const msg: WelcomeMessage = {
             type: 'welcome',
             player_id: playerId,
             config: GameConfig,
-        });
+        };
+        tcpServer.sendTo(clientId, msg);
     });
 
-    ipcMain.handle('server:lobby', (_event, players: Array<{ id: string; name: string }>) => {
-        tcpServer.broadcast({ type: 'lobby', players });
+    ipcMain.handle('server:lobby', (_event, players: PlayerInfo[]) => {
+        const msg: LobbyMessage = { type: 'lobby', players };
+        tcpServer.broadcast(msg);
     });
 
     ipcMain.handle('server:countdown', (_event, seconds: number) => {
-        tcpServer.broadcast({ type: 'countdown', seconds });
+        const msg: CountdownMessage = { type: 'countdown', seconds };
+        tcpServer.broadcast(msg);
     });
 
     ipcMain.handle('server:start', () => {
-        tcpServer.broadcast({ type: 'start' });
+        const msg: StartMessage = { type: 'start' };
+        tcpServer.broadcast(msg);
     });
 
-    ipcMain.handle('server:state', (_event, flag: Record<string, unknown>, players: Array<Record<string, unknown>>) => {
-        tcpServer.broadcast({ type: 'state', flag, players });
+    ipcMain.handle('server:state', (_event, flag: FlagState, players: PlayerState[]) => {
+        const msg: StateMessage = { type: 'state', flag, players };
+        tcpServer.broadcast(msg);
     });
 
     ipcMain.handle('server:game_over', (_event, winner: string) => {
-        tcpServer.broadcast({ type: 'game_over', winner });
+        const msg: GameOverMessage = { type: 'game_over', winner };
+        tcpServer.broadcast(msg);
     });
 
-    ipcMain.handle('server:error', (_event, clientId: string, reason: string) => {
-        tcpServer.sendTo(clientId, { type: 'error', reason });
+    ipcMain.handle('server:error', (_event, clientId: string, reason: ErrorReason) => {
+        const msg: ErrorMessage = { type: 'error', reason };
+        tcpServer.sendTo(clientId, msg);
     });
 }
