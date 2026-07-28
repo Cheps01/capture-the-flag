@@ -1,8 +1,10 @@
 import { app } from 'electron';
 import { createWindow } from './window'
+import { registerNetworkHandlers } from './ipc';
 
 app.whenReady().then(() => {
-    createWindow();
+    const win = createWindow();
+    registerNetworkHandlers(win);
 });
 
 app.on('window-all-closed', () => {

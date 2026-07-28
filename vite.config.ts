@@ -13,9 +13,17 @@ export default defineConfig({
             main: {
                 entry: path.resolve(__dirname, 'src/main/main.ts'),
                 vite: {
-                build: {
-                    outDir: path.resolve(__dirname, 'dist/main')
+                    build: {
+                        outDir: path.resolve(__dirname, 'dist/main')
+                    }
                 }
+            },
+            preload: {
+                input: path.resolve(__dirname, 'src/main/preload.ts'),
+                vite: {
+                    build: { 
+                        outDir: path.resolve(__dirname, 'dist/main') 
+                    }
                 }
             }
         })
