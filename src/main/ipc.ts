@@ -32,11 +32,11 @@ export function registerNetworkHandlers(mainWindow: BrowserWindow): void {
     // ═══════════════════════════════════════════════════════════════
 
     ipcMain.handle('client:discover', (_event, port?: number) => {
-        udpBroadcast.init((msg) => {
+        udpBroadcast.init((msg, rinfo) => {
             try {
                 const typed = msg as ServerInfoMessage;
                 if (typed.type === 'server_info') {
-                    mainWindow.webContents.send('client:server_info', typed);
+                    mainWindow.webContents.send('client:server_info', typed, rinfo.address);
                 }
             } catch {
                 // Discard invalid UDP messages silently per protocol

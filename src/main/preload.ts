@@ -41,8 +41,8 @@ contextBridge.exposeInMainWorld('client', {
         ipcRenderer.invoke('client:interact'),
 
     // ── Receive Events from Server (S → C) ─────────────────────
-    onServerInfo: (cb: (data: ServerInfoMessage) => void) => {
-        ipcRenderer.on('client:server_info', (_e, data) => cb(data));
+    onServerInfo: (cb: (data: ServerInfoMessage, address: string) => void) => {
+        ipcRenderer.on('client:server_info', (_e, data, address) => cb(data, address));
     },
     onConnected: (cb: () => void) => {
         ipcRenderer.on('client:connected', () => cb());
