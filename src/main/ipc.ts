@@ -123,11 +123,11 @@ export function registerNetworkHandlers(mainWindow: BrowserWindow): void {
             },
         });
 
-        udpListen.start((msg, address, _remotePort) => {
+        udpListen.start((msg, address, remotePort) => {
             try {
                 const typed = msg as DiscoverMessage;
                 if (typed.type === 'discover') {
-                    mainWindow.webContents.send('server:discover', typed, address);
+                    mainWindow.webContents.send('server:discover', typed, address, remotePort);
                 }
             } catch {
                 // Discard invalid UDP messages silently per protocol

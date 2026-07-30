@@ -110,7 +110,8 @@ export class DiscoveryScene extends Phaser.Scene {
         });
 
         wc.onConnected(() => {
-            // Connected, waiting for welcome
+            const name = getPlayerName() || 'Player';
+            wc.join(name);
         });
 
         wc.onWelcome((data: any) => {

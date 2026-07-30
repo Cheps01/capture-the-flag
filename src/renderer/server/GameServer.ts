@@ -65,6 +65,7 @@ export class GameServer {
     private serverName: string;
     private lastTickTime = 0;
     private winnerDeclared = false;
+    private tcpPort = 0;
 
     constructor(hostName: string, callbacks: GameServerCallbacks) {
         this.hostName = hostName;
@@ -90,6 +91,7 @@ export class GameServer {
     // ── Lifecycle ────────────────────────────────────────────────
 
     start(port: number): void {
+        this.tcpPort = port;
         (window as any).server.listen(port);
         this.registerListeners();
     }
@@ -106,8 +108,8 @@ export class GameServer {
     private registerListeners(): void {
         const ws = (window as any).server;
 
-        ws.onDiscover((msg: DiscoverMessage, address: string) => {
-            this.handleDiscover(msg, address);
+        ws.onDiscover((msg: DiscoverMessage, address: string, remotePort: number) => {
+            this.handleDiscover(msg, address, remotePort);
         });
 
         ws.onJoin((clientId: string, msg: JoinMessage) => {
@@ -133,13 +135,13 @@ export class GameServer {
 
     // ── UDP Discovery ────────────────────────────────────────────
 
-    private handleDiscover(_msg: DiscoverMessage, address: string): void {
+    private handleDiscover(_msg: DiscoverMessage, address: string, remotePort: number): void {
         const ws = (window as any).server;
-        ws.serverInfo(address, 8888, {
+        ws.serverInfo(address, remotePort, {
             type: 'server_info',
             v: PROTOCOL_VERSION,
             name: this.serverName,
-            tcp_port: 8889,
+            tcp_port: this.tcpPort,
             state: this.phase === 'lobby' ? 'lobby' : 'playing',
             players: this.players.size,
         });

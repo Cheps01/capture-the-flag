@@ -107,8 +107,8 @@ contextBridge.exposeInMainWorld('server', {
         ipcRenderer.invoke('server:error', clientId, reason),
 
     // ── Receive Events from Clients (C → S) ────────────────────
-    onDiscover: (cb: (data: DiscoverMessage, address: string) => void) => {
-        ipcRenderer.on('server:discover', (_e, data, address) => cb(data, address));
+    onDiscover: (cb: (data: DiscoverMessage, address: string, remotePort: number) => void) => {
+        ipcRenderer.on('server:discover', (_e, data, address, remotePort) => cb(data, address, remotePort));
     },
     onJoin: (cb: (clientId: string, data: JoinMessage) => void) => {
         ipcRenderer.on('server:join', (_e, clientId, data) => cb(clientId, data));

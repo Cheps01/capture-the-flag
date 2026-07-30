@@ -1,2 +1,4 @@
 Ahora vamos a pasar a la implementación de las pantallas y lógica de juego. La infraesctructura de red está completa con métodos expuestos por IPC para llamarlos desde el proceso renderer, solo hace falta manejar el game loop. 
 Impelementa un archivo src/main/game/GameEngine.ts como parte del proceso main para generar el juego. Con ello, hay que renderizar el contenido de la aplicación utilizando las utilidades de Phaser. En esta sección se maneja toda la lógica de juego y básica, 
+
+My current setup works for the most part, but an bug is happening to expose the server mode to the network. The server is not responding to the discovery message from clients with the udp server_info message. Check this specific implementation, considering the protocol specified in @CTF-protocol.md. Identify the problem and map a plan to solve it.
